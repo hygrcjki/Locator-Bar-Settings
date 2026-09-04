@@ -67,29 +67,7 @@ public final class LocatorBarsMod implements ModInitializer {
 
     private static void registerOperatorCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(literal("locatorop").requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
-                .then(literal("gui").executes(context -> { LocatorMenu.openOperatorMenu(context.getSource().getPlayerOrException()); return 1; }))
-                .then(literal("access").then(argument("player", EntityArgument.player())
-                        .then(literal("allow").executes(context -> setAccess(context, true)))
-                        .then(literal("deny").executes(context -> setAccess(context, false)))))
-                .then(literal("block").then(argument("player", EntityArgument.player()).executes(context -> setBlocked(context, true))))
-                .then(literal("unblock").then(argument("player", EntityArgument.player()).executes(context -> setBlocked(context, false))))
-                .then(literal("add").then(argument("group", word()).then(argument("player", EntityArgument.player()).executes(context ->
-                        result(context.getSource().getPlayerOrException(), GROUPS.forceAdd(getString(context, "group"), EntityArgument.getPlayer(context, "player").getUUID()))))))
-                .then(literal("kick").then(argument("group", word()).then(argument("player", EntityArgument.player()).executes(context ->
-                        result(context.getSource().getPlayerOrException(), GROUPS.forceKick(getString(context, "group"), EntityArgument.getPlayer(context, "player").getUUID()))))))
-                .then(literal("disband").then(argument("group", word()).executes(context ->
-                        result(context.getSource().getPlayerOrException(), GROUPS.disband(getString(context, "group")))))));
-    }
-
-    private static int setAccess(com.mojang.brigadier.context.CommandContext<CommandSourceStack> context, boolean allowed) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        ServerPlayer target = EntityArgument.getPlayer(context, "player");
-        GROUPS.setCommandAccess(target.getUUID(), allowed);
-        return success(context.getSource().getPlayerOrException(), allowed ? "Command access granted." : "Command access denied.");
-    }
-    private static int setBlocked(com.mojang.brigadier.context.CommandContext<CommandSourceStack> context, boolean blocked) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-        ServerPlayer target = EntityArgument.getPlayer(context, "player");
-        GROUPS.setGroupBlocked(target.getUUID(), blocked);
-        return success(context.getSource().getPlayerOrException(), blocked ? "Player blocked from groups." : "Player unblocked from groups.");
+                .then(literal("gui").executes(context -> { LocatorMenu.openOperatorMenu(context.getSource().getPlayerOrException()); return 1; })));
     }
     private static int showInfo(ServerPlayer player) {
         GroupService.Group group = GROUPS.groupOf(player.getUUID()).orElse(null);

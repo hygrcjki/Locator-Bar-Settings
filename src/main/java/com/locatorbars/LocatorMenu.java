@@ -24,6 +24,9 @@ public final class LocatorMenu extends AbstractContainerMenu {
     private final boolean operator;
     private final SimpleContainer contents = new SimpleContainer(27);
     private final List<UUID> onlinePlayers = new ArrayList<>();
+    private final List<GroupService.Group> adminGroups = new ArrayList<>();
+    private UUID selectedPlayer;
+    private int selectedGroupIndex;
 
     private LocatorMenu(int id, Inventory inventory, ServerPlayer viewer, boolean operator) {
         super(MenuType.GENERIC_9x3, id);
@@ -47,7 +50,7 @@ public final class LocatorMenu extends AbstractContainerMenu {
     }
 
     private void refresh() {
-        contents.clearContent(); onlinePlayers.clear();
+        contents.clearContent(); onlinePlayers.clear(); adminGroups.clear();
         if (operator) refreshOperator(); else refreshPlayer();
         broadcastChanges();
     }
@@ -66,17 +69,25 @@ public final class LocatorMenu extends AbstractContainerMenu {
         put(26, Items.BARRIER, "Close", "Close this menu");
     }
     private void refreshOperator() {
-        put(18, Items.PAPER, "Admin controls", "Left click a player: toggle command access.");
-        put(19, Items.BARRIER, "Group restriction", "Right click a player: toggle create/join block.");
-        put(26, Items.COMPASS, LocatorBarsMod.GROUPS.groups().size() + " groups", "Use /locatorop add, kick, and disband for forced membership changes.");
+        adminGroups.addAll(LocatorBarsMod.GROUPS.groups());
+        if (selectedGroupIndex >= adminGroups.size()) selectedGroupIndex = Math.max(0, adminGroups.size() - 1);
+        String groupName = selectedGroup() == null ? "No group selected" : selectedGroup().name();
+        String playerName = selectedPlayer == null ? "No player selected" : playerName(selectedPlayer);
         int slot = 0;
         for (ServerPlayer player : viewer.level().getServer().getPlayerList().getPlayers()) {
             if (slot >= 18) break;
             UUID id = player.getUUID(); onlinePlayers.add(id);
-            String access = LocatorBarsMod.GROUPS.isCommandDenied(id) ? "DENIED" : "ALLOWED";
-            String group = LocatorBarsMod.GROUPS.isGroupBlocked(id) ? "BLOCKED" : "JOIN OK";
-            put(slot++, Items.PLAYER_HEAD, player.getName().getString(), "Left: commands " + access + " | Right: groups " + group);
+            put(slot++, Items.PLAYER_HEAD, (id.equals(selectedPlayer) ? "> " : "") + player.getName().getString(), "Click to select this player.");
         }
+        put(18, Items.ARROW, "Previous group", groupName);
+        put(19, Items.ARROW, "Next group", groupName);
+        put(20, Items.COMPASS, "Selected group", groupName);
+        put(21, Items.PLAYER_HEAD, "Selected player", playerName);
+        put(22, Items.PAPER, "Toggle command access", playerName);
+        put(23, Items.BARRIER, "Toggle group restriction", playerName);
+        put(24, Items.EMERALD, "Force add to group", playerName + " -> " + groupName);
+        put(25, Items.REDSTONE, "Force kick from group", playerName + " from " + groupName);
+        put(26, Items.TNT, "Disband selected group", groupName);
     }
     private void put(int slot, net.minecraft.world.item.Item item, String name, String lore) {
         ItemStack stack = new ItemStack(item);
@@ -88,7 +99,7 @@ public final class LocatorMenu extends AbstractContainerMenu {
     @Override public boolean stillValid(Player player) { return player == viewer && viewer.isAlive(); }
     @Override public void clicked(int slot, int button, ContainerInput click, Player player) {
         if (slot < 0 || slot >= 27 || player != viewer) return;
-        if (operator) clickOperator(slot, button); else clickPlayer(slot);
+        if (operator) clickOperator(slot); else clickPlayer(slot);
     }
     private void clickPlayer(int slot) {
         if (slot == 12) { LocatorBarsMod.result(viewer, LocatorBarsMod.GROUPS.leave(viewer.getUUID())); refresh(); return; }
@@ -98,18 +109,36 @@ public final class LocatorMenu extends AbstractContainerMenu {
             refresh();
         }
     }
-    private void clickOperator(int slot, int button) {
-        if (slot >= onlinePlayers.size() || slot >= 18) return;
-        UUID target = onlinePlayers.get(slot);
-        if (button == 1) {
-            boolean blocked = !LocatorBarsMod.GROUPS.isGroupBlocked(target);
-            LocatorBarsMod.GROUPS.setGroupBlocked(target, blocked);
-            LocatorBarsMod.success(viewer, blocked ? "Player blocked from groups." : "Player unblocked from groups.");
-        } else {
-            boolean allowed = LocatorBarsMod.GROUPS.isCommandDenied(target);
-            LocatorBarsMod.GROUPS.setCommandAccess(target, allowed);
+    private void clickOperator(int slot) {
+        if (slot < 18) {
+            if (slot < onlinePlayers.size()) {
+                selectedPlayer = onlinePlayers.get(slot);
+                LocatorBarsMod.success(viewer, "Selected " + playerName(selectedPlayer) + ".");
+            }
+        } else if (slot == 18 && !adminGroups.isEmpty()) {
+            selectedGroupIndex = Math.floorMod(selectedGroupIndex - 1, adminGroups.size());
+        } else if (slot == 19 && !adminGroups.isEmpty()) {
+            selectedGroupIndex = (selectedGroupIndex + 1) % adminGroups.size();
+        } else if (slot == 22 && selectedPlayer != null) {
+            boolean allowed = LocatorBarsMod.GROUPS.isCommandDenied(selectedPlayer);
+            LocatorBarsMod.GROUPS.setCommandAccess(selectedPlayer, allowed);
             LocatorBarsMod.success(viewer, allowed ? "Command access granted." : "Command access denied.");
+        } else if (slot == 23 && selectedPlayer != null) {
+            boolean blocked = !LocatorBarsMod.GROUPS.isGroupBlocked(selectedPlayer);
+            LocatorBarsMod.GROUPS.setGroupBlocked(selectedPlayer, blocked);
+            LocatorBarsMod.success(viewer, blocked ? "Player blocked from groups." : "Player unblocked from groups.");
+        } else if (slot == 24 && selectedPlayer != null && selectedGroup() != null) {
+            LocatorBarsMod.result(viewer, LocatorBarsMod.GROUPS.forceAdd(selectedGroup().name(), selectedPlayer));
+        } else if (slot == 25 && selectedPlayer != null && selectedGroup() != null) {
+            LocatorBarsMod.result(viewer, LocatorBarsMod.GROUPS.forceKick(selectedGroup().name(), selectedPlayer));
+        } else if (slot == 26 && selectedGroup() != null) {
+            LocatorBarsMod.result(viewer, LocatorBarsMod.GROUPS.disband(selectedGroup().name()));
         }
         refresh();
+    }
+    private GroupService.Group selectedGroup() { return adminGroups.isEmpty() ? null : adminGroups.get(selectedGroupIndex); }
+    private String playerName(UUID id) {
+        ServerPlayer player = viewer.level().getServer().getPlayerList().getPlayer(id);
+        return player == null ? id.toString() : player.getName().getString();
     }
 }

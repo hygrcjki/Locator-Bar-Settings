@@ -12,12 +12,6 @@ A server-side Fabric 26.2 mod for managing private locator-bar groups. Install t
 
 ## Operator commands
 
-`/locatorop gui` opens the administration dashboard.
-
-`/locatorop access <player> allow|deny` grants or removes use of the player commands. Denied players cannot create or join groups.
-
-`/locatorop block <player>` and `/locatorop unblock <player>` control whether a player may create or join any group.
-
-`/locatorop add <group> <player>`, `/locatorop kick <group> <player>`, and `/locatorop disband <group>` are forced administrative actions; they do not require the member's consent.
+`/locatorop gui` is the only operator command. Select an online player in the administration dashboard, use the arrows to select a group, then use its buttons to allow/deny commands, allow/block group use, force-add, force-kick, or disband the selected group.
 
 Group data is stored at `config/customizable-locator-bars/groups.properties` on the server and survives restarts.
