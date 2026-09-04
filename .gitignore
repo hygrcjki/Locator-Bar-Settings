@@ -1,0 +1,16 @@
+# Gradle
+.gradle/
+build/
+
+# IDE and OS files
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Minecraft development runtime
+run/
+logs/
+
+# Local server/configuration data
+config/
