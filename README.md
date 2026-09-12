@@ -12,7 +12,7 @@ A server-side Fabric 26.2 mod for managing private locator-bar groups. Install t
 
 ## Operator commands
 
-`/locatorop gui` is the only operator command. It first shows paginated groups; select one to see its members. From that page an operator can select a member, allow/deny commands, allow/block group use, force-kick, or disband. **Force add** opens a paginated list of online players.
+`/locatorop gui` is the only operator command. It first shows paginated groups; select one to see its members. From that members page an operator can select a member, allow/deny commands, allow/block group use, force-kick, or disband. **Force add** opens a paginated list of online players.
 
 `/locator gui` lists every group member and whether they are online. The group owner can select and kick a member.
 

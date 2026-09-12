@@ -94,7 +94,6 @@ public final class LocatorMenu extends AbstractContainerMenu {
         }
         put(18, Items.ARROW, "Previous page", "Group page " + (groupPage + 1));
         put(19, Items.ARROW, "Next page", "Group page " + (groupPage + 1));
-        put(26, Items.TNT, "Disband selected group", selectedGroup == null ? "Select a group first." : selectedGroup.name());
     }
     private void adminMembersPage() {
         if (!groupStillExists()) { page = Page.ADMIN_GROUPS; selectedGroup = null; refresh(); return; }
@@ -152,7 +151,6 @@ public final class LocatorMenu extends AbstractContainerMenu {
             if (slot < LIST_SIZE && index < groups.size()) { selectedGroup = groups.get(index); selectedPlayer = null; page = Page.ADMIN_MEMBERS; }
             else if (slot == 18 && groupPage > 0) groupPage--;
             else if (slot == 19 && (groupPage + 1) * LIST_SIZE < groups.size()) groupPage++;
-            else if (slot == 26 && selectedGroup != null) LocatorBarsMod.result(viewer, LocatorBarsMod.GROUPS.disband(selectedGroup.name()));
         } else if (page == Page.ADMIN_MEMBERS) {
             List<UUID> members = new ArrayList<>(selectedGroup.members());
             if (slot < members.size()) selectedPlayer = members.get(slot);
