@@ -10,6 +10,7 @@ import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permissions;
+import net.minecraft.server.MinecraftServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,10 +22,12 @@ import static com.mojang.brigadier.arguments.StringArgumentType.word;
 public final class LocatorBarsMod implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("customizable_locator_bars");
     public static final GroupService GROUPS = new GroupService();
+    private static MinecraftServer server;
 
     @Override
     public void onInitialize() {
-        ServerLifecycleEvents.SERVER_STARTED.register(server -> GROUPS.load());
+        ServerLifecycleEvents.SERVER_STARTED.register(startedServer -> { server = startedServer; GROUPS.load(); refreshLocatorBars(); });
+        ServerLifecycleEvents.SERVER_STOPPED.register(stoppedServer -> server = null);
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> GROUPS.save());
         CommandRegistrationCallback.EVENT.register((dispatcher, access, environment) -> {
             registerPlayerCommands(dispatcher);
@@ -77,4 +80,13 @@ public final class LocatorBarsMod implements ModInitializer {
     static int result(ServerPlayer player, GroupService.Result outcome) { return outcome.success() ? success(player, outcome.message()) : fail(player, outcome.message()); }
     static int success(ServerPlayer player, String message) { player.sendSystemMessage(Component.literal(message)); return 1; }
     static int fail(ServerPlayer player, String message) { player.sendSystemMessage(Component.literal("[Locator Bars] " + message)); return 0; }
+    /** Rebuild vanilla waypoint connections after group membership changes. */
+    public static void refreshLocatorBars() {
+        if (server == null) return;
+        for (var level : server.getAllLevels()) {
+            var manager = level.getWaypointManager();
+            manager.breakAllConnections();
+            for (var transmitter : manager.transmitters()) manager.remakeConnections(transmitter);
+        }
+    }
 }

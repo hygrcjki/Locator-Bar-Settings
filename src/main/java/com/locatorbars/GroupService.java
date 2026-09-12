@@ -73,6 +73,7 @@ public final class GroupService {
         } catch (IOException error) {
             LocatorBarsMod.LOGGER.error("Could not save locator group data to {}", file, error);
         }
+        LocatorBarsMod.refreshLocatorBars();
     }
 
     public boolean canUse(UUID player) { return !deniedCommands.contains(player); }
@@ -84,6 +85,11 @@ public final class GroupService {
 
     public Optional<Group> group(String name) { return Optional.ofNullable(groups.get(normalize(name))); }
     public Optional<Group> groupOf(UUID player) { return groups.values().stream().filter(g -> g.members().contains(player)).findFirst(); }
+    /** Locator bars are private: a marker is sent only between two members of one group. */
+    public boolean canShareLocator(UUID receiver, UUID source) {
+        if (receiver.equals(source)) return false;
+        return groupOf(receiver).map(group -> group.members().contains(source)).orElse(false);
+    }
     public Collection<Group> groups() { return Collections.unmodifiableCollection(groups.values()); }
     public Collection<Group> invitationsFor(UUID player) { return groups.values().stream().filter(g -> g.invites().contains(player)).toList(); }
 
